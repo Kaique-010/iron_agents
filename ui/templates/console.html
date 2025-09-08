@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Agente ERP</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .console {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #00ff88;
+        }
+
+        .task-form {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .task-input {
+            width: 100%;
+            min-height: 100px;
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 5px;
+            padding: 15px;
+            color: #fff;
+            font-size: 16px;
+            resize: vertical;
+        }
+
+        .form-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            align-items: center;
+        }
+
+        .agent-select {
+            background: #333;
+            border: 1px solid #555;
+            border-radius: 5px;
+            padding: 10px;
+            color: #fff;
+            flex: 1;
+        }
+
+        .execute-btn {
+            background: #00ff88;
+            color: #000;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .execute-btn:hover {
+            background: #00cc6a;
+        }
+
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .agent-card {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .agent-card:hover {
+            border-color: #00ff88;
+            transform: translateY(-2px);
+        }
+
+        .agent-card.selected {
+            border-color: #00ff88;
+            background: #1a3a2a;
+        }
+
+        .agent-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .agent-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .agent-role {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        .response-card {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 200px;
+        }
+
+        .response-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #444;
+        }
+
+        .selected-agent {
+            font-weight: bold;
+            color: #00ff88;
+        }
+
+        .response-content {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 150px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 768px) {
+            .agents-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="console">
+        <h2>🧑‍💻 Cockpit de Agentes ERP</h2>
+
+        <div class="task-form">
+            <textarea id="taskInput" class="task-input"
+                placeholder="Digite sua tarefa aqui... \n\nExemplos:\n• 'criar uma tabela de usuários no banco'\n• 'fazer um componente react para login'\n• 'documentar a API do sistema'\n• 'configurar urls do django'"></textarea>
+
+            <div class="file-upload-section"
+                style="margin: 15px 0; padding: 15px; background: #1a1a1a; border-radius: 5px; border: 1px dashed #555;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                    <label for="fileInput" class="file-btn"
+                        style="background: #444; color: #fff; padding: 8px 15px; border-radius: 5px; cursor: pointer; border: 1px solid #666;">📁
+                        Selecionar Arquivos</label>
+                    <input type="file" id="fileInput" multiple accept=".py,.js,.html,.css,.json,.md,.txt"
+                        style="display: none;">
+                    <span style="font-size: 12px; color: #aaa;">Arquivos Python, JS, HTML, CSS, JSON, MD, TXT</span>
+                </div>
+                <div id="selectedFiles" style="font-size: 12px; color: #ccc; min-height: 20px;">Nenhum arquivo
+                    selecionado</div>
+            </div>
+
+            <div class="form-controls">
+                <select id="agentSelect" class="agent-select">
+                    <option value="auto">🤖 Seleção Automática (Recomendado)</option>
+                    <option value="arquiteto">🔵 Arquiteto</option>
+                    <option value="django_agent">🟢 Django Agent</option>
+                    <option value="doc_agent">📚 Doc Agent</option>
+                    <option value="banco_agent">🟣 Analista de Dados</option>
+                    <option value="react_agent">🟠 React Native</option>
+                </select>
+                <button id="executeBtn" class="execute-btn">🚀 Executar</button>
+            </div>
+        </div>
+        <div class="agents-grid">
+            <div class="agent-card" data-agent="arquiteto">
+                <div class="agent-avatar" style="background: linear-gradient(135deg, #2196F3, #1976D2);">🔵</div>
+                <div class="agent-name">Arquiteto</div>
+                <div class="agent-role">Estrutura & Design</div>
+            </div>
+            <div class="agent-card" data-agent="django_agent">
+                <div class="agent-avatar" style="background: linear-gradient(135deg, #4CAF50, #388E3C);">🟢</div>
+                <div class="agent-name">Django Agent</div>
+                <div class="agent-role">Backend & Web</div>
+            </div>
+            <div class="agent-card" data-agent="doc_agent">
+                <div class="agent-avatar" style="background: linear-gradient(135deg, #FF9800, #F57C00);">📚</div>
+                <div class="agent-name">Doc Agent</div>
+                <div class="agent-role">Docstrings & Análise</div>
+            </div>
+            <div class="agent-card" data-agent="banco_agent">
+                <div class="agent-avatar" style="background: linear-gradient(135deg, #9C27B0, #7B1FA2);">🟣</div>
+                <div class="agent-name">Analista</div>
+                <div class="agent-role">Dados & SQL</div>
+            </div>
+        </div>
+
+        <div class="response-card">
+            <div class="response-header">
+                <span>📋 Resposta do Agente:</span>
+                <span id="selectedAgent" class="selected-agent">Aguardando...</span>
+                <button id="toggleHistory" style="margin-left: auto; background: #444; color: #fff; border: 1px solid #666; padding: 5px 10px; border-radius: 3px; cursor: pointer;">📋 Histórico</button>
+            </div>
+            <div id="responseContent" class="response-content">Digite uma tarefa acima e clique em Executar para ver a
+                resposta aqui...</div>
+        </div>
+
+        <div id="historyPanel" class="history-panel" style="display: none; background: #2a2a2a; border-radius: 10px; padding: 20px; margin-top: 20px; max-height: 300px; overflow-y: auto;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px;">
+                <h3 style="color: #00ff88; margin: 0;">📋 Histórico da Sessão</h3>
+                <button id="clearHistory" style="background: #ff6b6b; color: #fff; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">🗑️ Limpar</button>
+            </div>
+            <div id="historyContent" style="font-size: 12px; color: #ccc;">Nenhuma interação ainda...</div>
+        </div>
+    </div>
+    <script>
+        const executeBtn = document.getElementById('executeBtn');
+        const taskInput = document.getElementById('taskInput');
+        const agentSelect = document.getElementById('agentSelect');
+        const selectedAgentSpan = document.getElementById('selectedAgent');
+        const responseContent = document.getElementById('responseContent');
+        const agentCards = document.querySelectorAll('.agent-card');
+
+        // Seleção visual de agentes
+        agentCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const agentKey = card.dataset.agent;
+                agentSelect.value = agentKey;
+
+                // Remove seleção anterior
+                agentCards.forEach(c => c.classList.remove('selected'));
+                // Adiciona seleção atual
+                card.classList.add('selected');
+            });
+        });
+
+        // Sincroniza select com cards
+        agentSelect.addEventListener('change', () => {
+            const selectedValue = agentSelect.value;
+            agentCards.forEach(card => {
+                card.classList.remove('selected');
+                if (card.dataset.agent === selectedValue) {
+                    card.classList.add('selected');
+                }
+            });
+        });
+
+        // Função principal de execução
+        executeBtn.addEventListener('click', async () => {
+            const task = taskInput.value.trim();
+            const agentKey = agentSelect.value;
+
+            if (!task) {
+                alert('Digite uma tarefa primeiro!');
+                taskInput.focus();
+                return;
+            }
+
+            // Mostra loading
+            executeBtn.textContent = '⏳ Processando...';
+            executeBtn.disabled = true;
+            responseContent.textContent = 'Processando sua solicitação...';
+
+            try {
+                let resp;
+
+                // Se há arquivos selecionados, usa o endpoint de upload
+                if (selectedFiles.length > 0) {
+                    const formData = new FormData();
+                    formData.append('task', task);
+                    formData.append('agent', agentKey);
+                    
+                    selectedFiles.forEach(file => {
+                        formData.append('files', file);
+                    });
+
+                    selectedAgentSpan.textContent = '📚 Doc Agent (com arquivos)';
+                    resp = await fetch('/agents/upload/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                        body: formData
+                    });
+                } else if (agentKey === 'auto') {
+                    selectedAgentSpan.textContent = '🤖 Seleção Automática';
+                    resp = await fetch('/agents/auto/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                        body: new URLSearchParams({ task })
+                    });
+                } else {
+                    const agentNames = {
+                        'arquiteto': '🔵 Arquiteto',
+                        'django_agent': '🟢 Django Agent',
+                        'doc_agent': '📚 Doc Agent',
+                        'banco_agent': '🟣 Analista',
+                        'react_agent': '🟠 React Native'
+                    };
+                    selectedAgentSpan.textContent = agentNames[agentKey] || agentKey;
+
+                    resp = await fetch('/agents/run/', {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                        body: new URLSearchParams({ task, agent: agentKey })
+                    });
+                }
+
+                const data = await resp.json();
+
+                if (data.error) {
+                    responseContent.textContent = '❌ Erro: ' + data.error;
+                    responseContent.style.color = '#ff6b6b';
+                    
+                    // Adiciona erro ao histórico
+                    const fileNames = selectedFiles.length > 0 ? selectedFiles.map(f => f.name) : [];
+                    addToHistory(task, selectedAgentSpan.textContent, `Erro: ${data.error}`, fileNames);
+                } else {
+                    responseContent.textContent = data.result;
+                    responseContent.style.color = '#fff';
+
+                    // Se foi seleção automática, mostra qual agente foi escolhido
+                    if (agentKey === 'auto' && data.agent_used) {
+                        selectedAgentSpan.textContent += ' → ' + data.agent_used;
+                    }
+                    
+                    // Adiciona ao histórico
+                    const fileNames = selectedFiles.length > 0 ? selectedFiles.map(f => f.name) : [];
+                    addToHistory(task, selectedAgentSpan.textContent, data.result, fileNames);
+                }
+
+            } catch (error) {
+                responseContent.textContent = '❌ Erro de conexão: ' + error.message;
+                responseContent.style.color = '#ff6b6b';
+                
+                // Adiciona erro de conexão ao histórico
+                const fileNames = selectedFiles.length > 0 ? selectedFiles.map(f => f.name) : [];
+                addToHistory(task, selectedAgentSpan.textContent, `Erro de conexão: ${error.message}`, fileNames);
+            } finally {
+                executeBtn.textContent = '🚀 Executar';
+                executeBtn.disabled = false;
+            }
+        });
+
+        // Gerenciamento de seleção de arquivos
+        const fileInput = document.getElementById('fileInput');
+        const selectedFilesDiv = document.getElementById('selectedFiles');
+        let selectedFiles = [];
+
+        fileInput.addEventListener('change', (e) => {
+            selectedFiles = Array.from(e.target.files);
+            updateSelectedFilesDisplay();
+        });
+
+        function updateSelectedFilesDisplay() {
+            if (selectedFiles.length === 0) {
+                selectedFilesDiv.textContent = 'Nenhum arquivo selecionado';
+                selectedFilesDiv.style.color = '#ccc';
+            } else {
+                const fileNames = selectedFiles.map(file => `📄 ${file.name}`).join(', ');
+                selectedFilesDiv.innerHTML = `<strong>${selectedFiles.length} arquivo(s):</strong> ${fileNames}`;
+                selectedFilesDiv.style.color = '#00ff88';
+            }
+        }
+
+        // Gerenciamento do histórico
+        const toggleHistoryBtn = document.getElementById('toggleHistory');
+        const historyPanel = document.getElementById('historyPanel');
+        const historyContent = document.getElementById('historyContent');
+        const clearHistoryBtn = document.getElementById('clearHistory');
+        let interactionHistory = [];
+
+        toggleHistoryBtn.addEventListener('click', () => {
+            if (historyPanel.style.display === 'none') {
+                historyPanel.style.display = 'block';
+                toggleHistoryBtn.textContent = '📋 Ocultar';
+                updateHistoryDisplay();
+            } else {
+                historyPanel.style.display = 'none';
+                toggleHistoryBtn.textContent = '📋 Histórico';
+            }
+        });
+
+        clearHistoryBtn.addEventListener('click', () => {
+            if (confirm('Limpar todo o histórico da sessão?')) {
+                interactionHistory = [];
+                updateHistoryDisplay();
+            }
+        });
+
+        function addToHistory(task, agent, result, files = []) {
+            // Verificações de segurança para evitar erros com undefined
+            const safeTask = task || 'Tarefa não especificada';
+            const safeAgent = agent || 'Agente desconhecido';
+            const safeResult = result || 'Resultado não disponível';
+            const safeFiles = files || [];
+            
+            const interaction = {
+                timestamp: new Date().toLocaleTimeString(),
+                task: safeTask.substring(0, 100) + (safeTask.length > 100 ? '...' : ''),
+                agent: safeAgent,
+                result: safeResult.substring(0, 200) + (safeResult.length > 200 ? '...' : ''),
+                files: safeFiles
+            };
+            
+            interactionHistory.unshift(interaction); // Adiciona no início
+            
+            // Mantém apenas as últimas 10 interações
+            if (interactionHistory.length > 10) {
+                interactionHistory = interactionHistory.slice(0, 10);
+            }
+            
+            updateHistoryDisplay();
+        }
+
+        function updateHistoryDisplay() {
+            if (interactionHistory.length === 0) {
+                historyContent.innerHTML = '<div style="color: #666; font-style: italic;">Nenhuma interação ainda...</div>';
+                return;
+            }
+            
+            const historyHtml = interactionHistory.map((interaction, index) => {
+                // Verificações de segurança para propriedades da interação
+                const safeAgent = interaction.agent || 'Agente desconhecido';
+                const safeTimestamp = interaction.timestamp || 'Horário não disponível';
+                const safeTask = interaction.task || 'Tarefa não especificada';
+                const safeResult = interaction.result || 'Resultado não disponível';
+                const safeFiles = interaction.files || [];
+                
+                return `
+                    <div style="border: 1px solid #444; border-radius: 5px; padding: 10px; margin-bottom: 10px; background: #1a1a1a;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <strong style="color: #00ff88;">${safeAgent}</strong>
+                            <span style="color: #888;">${safeTimestamp}</span>
+                        </div>
+                        <div style="margin-bottom: 5px;"><strong>Tarefa:</strong> ${safeTask}</div>
+                        ${safeFiles.length > 0 ? `<div style="margin-bottom: 5px; color: #ffa500;"><strong>Arquivos:</strong> ${safeFiles.join(', ')}</div>` : ''}
+                        <div style="color: #ccc;"><strong>Resultado:</strong> ${safeResult}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            historyContent.innerHTML = historyHtml;
+        }
+
+        // Enter para executar (Ctrl+Enter)
+        taskInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                executeBtn.click();
+            }
+        });
+    </script>
+</body>
+
+</html>

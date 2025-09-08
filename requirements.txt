@@ -1,0 +1,6 @@
+Django
+agno
+google-genai
+openai
+tiktoken
+
